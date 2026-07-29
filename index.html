@@ -14,7 +14,7 @@
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
                 <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">Tracking Request</h1>
-                <p class="text-slate-500 mt-1 text-sm">Pantau status pesanan barang di sini.</p>
+                <p class="text-slate-500 mt-1 text-sm">Pantau status dan estimasi pesanan barang di sini.</p>
             </div>
             <button onclick="fetchData()" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg shadow-sm text-sm font-medium transition-colors flex items-center gap-2">
                 <span>🔄</span> Segarkan Data
@@ -40,7 +40,7 @@
 
     <script>
         // MASUKKAN URL APLIKASI WEB KAMU DI SINI
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWqinFuSSMZbBlHKoeGmzG5-laWx45La3Fxto5h3sFWSBZzxKvHIHUT0aphMqZaRlurw/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyV9reBzApICS44ShT2en7E7stISkABlptRHKINPna8BFFQsPZTUpaId3kKdjQrtqExAA/exec';
         
         // Variabel global untuk menyimpan data asli agar bisa difilter oleh fitur Search
         let allTickets = []; 
@@ -87,8 +87,18 @@
                     if (typeof estimasiTampil === 'string' && estimasiTampil.includes('T') && estimasiTampil.includes('Z')) {
                         let parsedDate = new Date(estimasiTampil);
                         if (!isNaN(parsedDate)) {
-                            // Mengubah ke format lokal (contoh: 14/11/2026)
                             estimasiTampil = parsedDate.toLocaleDateString('id-ID'); 
+                        }
+                    }
+
+                    // ----------------------------------------------------
+                    // FORMAT TANGGAL SELESAI / CLOSED
+                    // ----------------------------------------------------
+                    let tglSelesaiTampil = item.tglSelesai || '-';
+                    if (typeof tglSelesaiTampil === 'string' && tglSelesaiTampil.includes('T') && tglSelesaiTampil.includes('Z')) {
+                        let parsedDateSelesai = new Date(tglSelesaiTampil);
+                        if (!isNaN(parsedDateSelesai)) {
+                            tglSelesaiTampil = parsedDateSelesai.toLocaleDateString('id-ID');
                         }
                     }
 
@@ -98,11 +108,12 @@
                             <td class="py-3 px-4 text-slate-600">${item.qty}</td>
                             <td class="py-3 px-4 text-slate-600">${item.vendor}</td>
                             <td class="py-3 px-4 text-slate-600">${estimasiTampil}</td>
-                            <td class="py-3 px-4 text-slate-600 text-right">
+                            <td class="py-3 px-4 text-slate-600">
                                 <span class="px-2.5 py-1 text-[11px] uppercase tracking-wider font-bold rounded-full border ${statusColor}">
                                     ${item.status}
                                 </span>
                             </td>
+                            <td class="py-3 px-4 text-slate-600 font-medium text-right">${tglSelesaiTampil}</td>
                         </tr>
                     `;
                 });
@@ -144,7 +155,8 @@
                                             <th class="py-3 px-4 font-semibold text-xs uppercase tracking-wider">Qty</th>
                                             <th class="py-3 px-4 font-semibold text-xs uppercase tracking-wider">Vendor</th>
                                             <th class="py-3 px-4 font-semibold text-xs uppercase tracking-wider">Estimasi</th>
-                                            <th class="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-right">Status</th>
+                                            <th class="py-3 px-4 font-semibold text-xs uppercase tracking-wider">Status</th>
+                                            <th class="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-right">Tgl Selesai</th>
                                         </tr>
                                     </thead>
                                     <tbody>
