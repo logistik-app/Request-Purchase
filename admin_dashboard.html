@@ -9,7 +9,7 @@
 </head>
 <body class="bg-slate-100 p-4 md:p-8 min-h-screen font-sans">
 
-    <div class="max-w-5xl mx-auto">
+    <div class="max-w-6xl mx-auto">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
                 <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">Admin Dashboard</h1>
@@ -35,7 +35,7 @@
 
     <script>
         // MASUKKAN URL APLIKASI WEB KAMU DI SINI!
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWqinFuSSMZbBlHKoeGmzG5-laWx45La3Fxto5h3sFWSBZzxKvHIHUT0aphMqZaRlurw/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyV9reBzApICS44ShT2en7E7stISkABlptRHKINPna8BFFQsPZTUpaId3kKdjQrtqExAA/exec';
         let allTickets = []; 
 
         async function fetchData() {
@@ -66,30 +66,45 @@
                     if(item.status.toLowerCase() === 'diproses') statusColor = 'bg-blue-100 text-blue-800';
                     if(item.status.toLowerCase() === 'selesai') statusColor = 'bg-emerald-100 text-emerald-800';
 
-                    // ----------------------------------------------------
-                    // PERBAIKAN FORMAT ESTIMASI (HILANGKAN JAM)
-                    // ----------------------------------------------------
+                    // Formatting tanggal estimasi
                     let estimasiTampil = item.estimasi || '-';
                     if (typeof estimasiTampil === 'string' && estimasiTampil.includes('T') && estimasiTampil.includes('Z')) {
                         let parsedDate = new Date(estimasiTampil);
                         if (!isNaN(parsedDate)) {
-                            // Mengubah ke format lokal (contoh: 14/11/2026)
                             estimasiTampil = parsedDate.toLocaleDateString('id-ID'); 
                         }
+                    }
+
+                    // Formatting tanggal selesai/closed
+                    let tglSelesaiTampil = item.tglSelesai || '-';
+                    if (typeof tglSelesaiTampil === 'string' && tglSelesaiTampil.includes('T') && tglSelesaiTampil.includes('Z')) {
+                        let parsedDateSelesai = new Date(tglSelesaiTampil);
+                        if (!isNaN(parsedDateSelesai)) {
+                            tglSelesaiTampil = parsedDateSelesai.toLocaleDateString('id-ID');
+                        }
+                    }
+
+                    // Hitung otomatis TOTAL (Qty x Harga)
+                    let totalHargaTampil = '-';
+                    if (item.harga !== '-' && !isNaN(item.harga) && !isNaN(item.qty)) {
+                        let totalVal = Number(item.qty) * Number(item.harga);
+                        totalHargaTampil = 'Rp ' + totalVal.toLocaleString('id-ID');
                     }
 
                     itemsHTML += `
                         <tr class="border-b last:border-0 hover:bg-slate-50 transition-colors">
                             <td class="py-3 px-4 font-medium text-slate-700">${item.namaBarang}</td>
                             <td class="py-3 px-4 text-slate-600">${item.qty}</td>
-                            <td class="py-3 px-4 text-slate-600">${item.harga !== '-' ? 'Rp '+item.harga : '-'}</td>
+                            <td class="py-3 px-4 text-slate-600">${item.harga !== '-' ? 'Rp '+Number(item.harga).toLocaleString('id-ID') : '-'}</td>
+                            <td class="py-3 px-4 font-semibold text-slate-700">${totalHargaTampil}</td>
                             <td class="py-3 px-4 text-slate-600">${item.vendor}</td>
                             <td class="py-3 px-4 text-slate-600">${estimasiTampil}</td>
                             <td class="py-3 px-4 text-slate-600">
                                 <span class="px-2.5 py-1 text-[11px] uppercase tracking-wider font-bold rounded-full ${statusColor}">${item.status}</span>
                             </td>
+                            <td class="py-3 px-4 text-slate-600 font-medium">${tglSelesaiTampil}</td>
                             <td class="py-3 px-4 text-right">
-                                <button onclick="editItem('${tiket.ticketId}', '${item.namaBarang}', '${item.harga}', '${item.vendor}', '${item.status}','${estimasiTampil}')" class="text-blue-600 hover:text-blue-800 font-medium text-sm bg-blue-50 px-3 py-1 rounded-md transition-colors">✏️ Edit</button>
+                                <button onclick="editItem('${tiket.ticketId}', '${item.namaBarang}', '${item.harga}', '${item.vendor}', '${item.status}','${estimasiTampil}', '${tglSelesaiTampil}')" class="text-blue-600 hover:text-blue-800 font-medium text-sm bg-blue-50 px-3 py-1 rounded-md transition-colors">✏️ Edit</button>
                             </td>
                         </tr>
                     `;
@@ -131,9 +146,11 @@
                                             <th class="py-3 px-4 font-semibold text-xs uppercase">Barang</th>
                                             <th class="py-3 px-4 font-semibold text-xs uppercase">Qty</th>
                                             <th class="py-3 px-4 font-semibold text-xs uppercase">Harga</th>
+                                            <th class="py-3 px-4 font-semibold text-xs uppercase">Total</th>
                                             <th class="py-3 px-4 font-semibold text-xs uppercase">Vendor</th>
                                             <th class="py-3 px-4 font-semibold text-xs uppercase">Estimasi</th>
                                             <th class="py-3 px-4 font-semibold text-xs uppercase">Status</th>
+                                            <th class="py-3 px-4 font-semibold text-xs uppercase">Tgl Selesai</th>
                                             <th class="py-3 px-4 font-semibold text-xs uppercase text-right">Aksi</th>
                                         </tr>
                                     </thead>
@@ -161,9 +178,8 @@
             }
         }
 
-        // FUNGSI UNTUK MENGHAPUS TIKET
         function hapusTiket(event, ticketId) {
-            event.stopPropagation(); // Mencegah dropdown terbuka saat tombol hapus diklik
+            event.stopPropagation();
             
             Swal.fire({
                 title: 'Hapus Tiket?',
@@ -185,7 +201,7 @@
                         const res = await response.json();
                         if(res.status === 'sukses') {
                             Swal.fire('Terhapus!', 'Tiket berhasil dihapus.', 'success');
-                            fetchData(); // Refresh data
+                            fetchData(); 
                         }
                     } catch(err) {
                         Swal.fire('Error', 'Gagal menghapus tiket.', 'error');
@@ -194,8 +210,8 @@
             });
         }
 
-        // FUNGSI UNTUK MENGEDIT BARANG
-        function editItem(ticketId, namaBarang, currentHarga, currentVendor, currentStatus, currentEstimasi) {
+        // FUNGSI EDIT BARANG (DITAMBAH INPUT TGL SELESAI)
+        function editItem(ticketId, namaBarang, currentHarga, currentVendor, currentStatus, currentEstimasi, currentTglSelesai) {
             Swal.fire({
                 title: `Edit ${namaBarang}`,
                 html: `
@@ -210,7 +226,11 @@
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-700">Estimasi Tiba / Selesai</label>
-                            <input id="swal-estimasi" type="text" class="w-full p-2 border rounded-md" value="${currentEstimasi !== '-' && currentEstimasi !== 'undefined' ? currentEstimasi : ''}" placeholder="Cth: 14/11/2026 atau 2 Hari lagi">
+                            <input id="swal-estimasi" type="text" class="w-full p-2 border rounded-md" value="${currentEstimasi !== '-' && currentEstimasi !== 'undefined' ? currentEstimasi : ''}" placeholder="Cth: 14/11/2026">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700">Tgl Selesai / Closed</label>
+                            <input id="swal-tglSelesai" type="text" class="w-full p-2 border rounded-md" value="${currentTglSelesai !== '-' && currentTglSelesai !== 'undefined' ? currentTglSelesai : ''}" placeholder="Cth: 15/11/2026 atau Selesai">
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-700">Status Barang</label>
@@ -230,6 +250,7 @@
                         harga: document.getElementById('swal-harga').value || '-',
                         vendor: document.getElementById('swal-vendor').value || '-',
                         estimasi: document.getElementById('swal-estimasi').value || '-',
+                        tglSelesai: document.getElementById('swal-tglSelesai').value || '-',
                         status: document.getElementById('swal-status').value
                     }
                 }
@@ -244,6 +265,7 @@
                         harga: result.value.harga,
                         vendor: result.value.vendor,
                         estimasi: result.value.estimasi,
+                        tglSelesai: result.value.tglSelesai,
                         status: result.value.status
                     };
 
@@ -255,7 +277,7 @@
                         const res = await response.json();
                         if(res.status === 'sukses') {
                             Swal.fire('Tersimpan!', 'Data barang berhasil diperbarui.', 'success');
-                            fetchData(); // Refresh data agar perubahan terlihat
+                            fetchData(); 
                         } else {
                             Swal.fire('Gagal', 'Sistem tidak dapat memperbarui data.', 'error');
                         }
@@ -266,7 +288,6 @@
             });
         }
 
-        // Fitur Search
         document.getElementById('searchInput').addEventListener('input', function(e) {
             const keyword = e.target.value.toLowerCase();
             const filteredTickets = allTickets.filter(tiket => {
