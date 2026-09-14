@@ -75,30 +75,48 @@
 
     <script>
         // MASUKKAN URL APLIKASI WEB KAMU DI SINI
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyV9reBzApICS44ShT2en7E7stISkABlptRHKINPna8BFFQsPZTUpaId3kKdjQrtqExAA/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzj6wVMYFnrIboyStnLHux3JYj50AAER8iKcWCAE_C7sjqvr-WxnXPZ3dH48sm8sP5bNA/exec';
 
         // Mengambil daftar Divisi dari Google Sheets
-        async function loadDivisi() {
-            const areaSelect = document.getElementById('area');
-            try {
-                const response = await fetch(SCRIPT_URL + "?action=getDivisi");
-                const divisiList = await response.json();
-                
-                areaSelect.innerHTML = '<option value="" disabled selected>-- Pilih Divisi Kamu --</option>';
-                
-                divisiList.forEach(divisi => {
-                    const option = document.createElement('option');
-                    option.value = divisi;
-                    option.textContent = divisi;
-                    areaSelect.appendChild(option);
-                });
-            } catch (error) {
-                console.error("Gagal mengambil data divisi:", error);
-                areaSelect.innerHTML = '<option value="" disabled selected>Gagal memuat divisi. Coba muat ulang halaman.</option>';
-            }
-        }
+        // Mengambil daftar Divisi dari Google Sheets (Dengan Fitur Cache agar Instan)
+async function loadDivisi() {
+    const areaSelect = document.getElementById('area');
+    
+    // 1. Cek apakah data divisi sudah tersimpan di browser
+    const cachedDivisi = localStorage.getItem('divisiData');
+    if (cachedDivisi) {
+        renderDivisiOptions(JSON.parse(cachedDivisi), areaSelect);
+        return; // Hentikan fungsi di sini, tidak perlu nunggu loading dari server
+    }
+
+    try {
+        // 2. Jika belum ada di browser, baru ambil dari server Google
+        const response = await fetch(SCRIPT_URL + "?action=getDivisi");
+        const divisiList = await response.json();
         
-        loadDivisi();
+        // 3. Simpan hasilnya ke browser agar refresh selanjutnya instan
+        localStorage.setItem('divisiData', JSON.stringify(divisiList));
+        renderDivisiOptions(divisiList, areaSelect);
+    } catch (error) {
+        console.error("Gagal mengambil data divisi:", error);
+        areaSelect.innerHTML = '<option value="" disabled selected>Gagal memuat divisi. Coba muat ulang halaman.</option>';
+    }
+}
+
+// Fungsi bantuan untuk mencetak opsi divisi ke dalam HTML
+function renderDivisiOptions(divisiList, selectElement) {
+    selectElement.innerHTML = '<option value="" disabled selected>-- Pilih Divisi Kamu --</option>';
+    divisiList.forEach(divisi => {
+        const option = document.createElement('option');
+        option.value = divisi;
+        option.textContent = divisi;
+        selectElement.appendChild(option);
+    });
+}
+
+loadDivisi();
+        
+       
 
         function tambahBarang() {
             const container = document.getElementById('containerBarang');
